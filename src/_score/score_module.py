@@ -46,6 +46,15 @@ class Adventure(ScoreModule):
                             question.data.get("options")
                             .get("finalScore")
                         )
+            # if we got this far we didn't find a corresponding Question model instance
+            # check the qset for a matching node
+            question = self.find_item_with_id(log.item_id, "nodeId", True)
+            if question is not None:
+                return int(
+                    question.get("options")
+                    .get("finalScore", 0)
+                )
+
             return 0
         else:
             return -1
@@ -132,33 +141,35 @@ class Adventure(ScoreModule):
         ]
 
     def get_question_by_item_id(self, item_id):
-        def find_item_with_id(decoded, item_id):
-            import copy
-
-            def _process_item(item):
-                if isinstance(item, list):
-                    for element in item:
-                        result = _process_item(element)
-                        if result is not None:
-                            return result
-
-                elif isinstance(item, dict):
-                    copied_item = copy.deepcopy(item)
-
-                    if Question.is_question(copied_item):
-                        if copied_item.get("id") == item_id:
-                            return copied_item
-
-                    for value in copied_item.values():
-                        if isinstance(value, (dict, list)):
-                            result = _process_item(value)
-                            if result is not None:
-                                return result
-                return None
-            return _process_item(decoded)
-
         question = next((q for q in self.questions if q.item_id == item_id), None)
         # see if we can find this question in the qset itself
         if question is None:
-            return find_item_with_id(self.qset, item_id)
+            return self.find_item_with_id(item_id)
         return question.data
+
+    def find_item_with_id(self, item_id, target_prop="id", idIsInt=False):
+        import copy
+
+        def _process_item(item):
+            if isinstance(item, list):
+                for element in item:
+                    result = _process_item(element)
+                    if result is not None:
+                        return result
+
+            elif isinstance(item, dict):
+                copied_item = copy.deepcopy(item)
+
+                if Question.is_question(copied_item):
+                    if idIsInt and int(copied_item.get(target_prop)) == int(item_id):
+                        return copied_item
+                    elif copied_item.get(target_prop) == item_id:
+                        return copied_item
+
+                for value in copied_item.values():
+                    if isinstance(value, (dict, list)):
+                        result = _process_item(value)
+                        if result is not None:
+                            return result
+            return None
+        return _process_item(self.qset)
