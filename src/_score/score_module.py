@@ -1,6 +1,5 @@
-from core.models import Log
+from core.models import Log, Question
 from scoring.module import ScoreModule
-
 
 class Adventure(ScoreModule):
 
@@ -131,3 +130,35 @@ class Adventure(ScoreModule):
                 "table": details,
             }
         ]
+
+    def get_question_by_item_id(self, item_id):
+        def find_item_with_id(decoded, item_id):
+            import copy
+
+            def _process_item(item):
+                if isinstance(item, list):
+                    for element in item:
+                        result = _process_item(element)
+                        if result is not None:
+                            return result
+
+                elif isinstance(item, dict):
+                    copied_item = copy.deepcopy(item)
+
+                    if Question.is_question(copied_item):
+                        if copied_item.get("id") == item_id:
+                            return copied_item
+
+                    for value in copied_item.values():
+                        if isinstance(value, (dict, list)):
+                            result = _process_item(value)
+                            if result is not None:
+                                return result
+                return None
+            return _process_item(decoded)
+
+        question = next((q for q in self.questions if q.item_id == item_id), None)
+        # see if we can find this question in the qset itself
+        if question is None:
+            return find_item_with_id(self.qset, item_id)
+        return question.data
