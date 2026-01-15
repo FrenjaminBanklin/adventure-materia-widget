@@ -48,12 +48,13 @@ class Adventure(ScoreModule):
                         )
             # if we got this far we didn't find a corresponding Question model instance
             # check the qset for a matching node
-            question = self.find_item_with_id(log.item_id, "nodeId", True)
-            if question is not None:
-                return int(
-                    question.get("options")
-                    .get("finalScore", 0)
-                )
+            if log.item_id is not None:
+                question = self.find_item_with_id(log.item_id, True)
+                if question is not None:
+                    return int(
+                        question.get("options")
+                        .get("finalScore", 0)
+                    )
 
             return 0
         else:
@@ -147,7 +148,7 @@ class Adventure(ScoreModule):
             return self.find_item_with_id(item_id)
         return question.data
 
-    def find_item_with_id(self, item_id, target_prop="id", idIsInt=False):
+    def find_item_with_id(self, item_id, isNodeId=False):
         import copy
 
         def _process_item(item):
@@ -161,9 +162,10 @@ class Adventure(ScoreModule):
                 copied_item = copy.deepcopy(item)
 
                 if Question.is_question(copied_item):
-                    if idIsInt and int(copied_item.get(target_prop)) == int(item_id):
-                        return copied_item
-                    elif copied_item.get(target_prop) == item_id:
+                    if isNodeId:
+                        if "options" in copied_item and int(copied_item.get("options").get("id")) == int(item_id):
+                            return copied_item
+                    elif copied_item.get("id") == item_id:
                         return copied_item
 
                 for value in copied_item.values():
