@@ -31,10 +31,15 @@ class Adventure(ScoreModule):
                         question.data.get("options")
                         .get("id")
                     ):
-                        return int(
-                            question.data.get("options")
-                            .get("finalScore", 0)
-                        )
+                        if "finalScore" in question.data.get("options"):
+                            return int(
+                                question.data.get("options")
+                                .get("finalScore", 0)
+                            )
+                        # a matching node was found but it does not have the property we expect
+                        # use the log's score value as a fallback
+                        else:
+                            return int(log.value)
 
                 else:
                     if (
@@ -51,10 +56,15 @@ class Adventure(ScoreModule):
             if log.item_id is not None:
                 question = self.find_item_with_id(log.item_id, True)
                 if question is not None:
-                    return int(
-                        question.get("options")
-                        .get("finalScore", 0)
-                    )
+                    if "finalScore" in question.get("options"):
+                        return int(
+                            question.get("options")
+                            .get("finalScore", 0)
+                        )
+                    # a matching node was found but it does not have the property we expect
+                    # use the log's score value as a fallback
+                    else:
+                        return int(log.value)
 
             return 0
         else:
